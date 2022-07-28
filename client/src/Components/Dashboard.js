@@ -10,9 +10,9 @@ function Dashboard() {
 
   const navigate = useNavigate();
   const [uploadedFiles, setUploadedFiles] = useState([]);
-
+  let data;
   useEffect(() => {
-    let data = JSON.parse(localStorage.getItem("user"));
+    data = JSON.parse(localStorage.getItem("user"));
     // console.log(data);
     if (data == null) {
       navigate("/");
@@ -33,13 +33,17 @@ function Dashboard() {
       .post("http://localhost:4000/fileUpload", formdata)
       .then((res) => {
         console.log(res);
+        alert("file updated succesfully!!");
+        document.getElementById("input").value = "";
         setCount(count + 1);
       });
   };
   const getFiles = async () => {
-    await axios.get("http://localhost:4000/getFiles").then((res) => {
-      setUploadedFiles(res.data.data.Contents);
-    });
+    await axios
+      .post(`http://localhost:4000/getFiles?data=${data.emails[0].value}`)
+      .then((res) => {
+        setUploadedFiles(res.data.data.Contents);
+      });
   };
   const downloadFile = async (key) => {
     await axios

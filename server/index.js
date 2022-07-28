@@ -34,7 +34,7 @@ app.post("/fileUpload", upload.single("file"), (req, res) => {
   const { originalname, buffer } = req.file;
   const key = `${req.body.name}-${originalname}`;
   let params = {
-    Bucket: "krayo-test",
+    Bucket: process.env.BUCKET,
     Body: buffer,
     Key: key,
   };
@@ -42,9 +42,11 @@ app.post("/fileUpload", upload.single("file"), (req, res) => {
     err ? console.log(err) : res.json({ reesponse: resp });
   });
 });
-app.get("/getFiles", async (req, res) => {
+app.post("/getFiles", async (req, res) => {
+  console.log(process.env.BUCKET);
   const params = {
-    Bucket: "krayo-test",
+    Bucket: process.env.BUCKET,
+    Prefix: req.query.data,
   };
   const bucketObjects = await s3.listObjects(params).promise();
   console.log(bucketObjects);
@@ -53,7 +55,7 @@ app.get("/getFiles", async (req, res) => {
 app.post("/getPresignedUrl", async (req, res) => {
   const { key } = req.query;
   const params = {
-    Bucket: "krayo-test",
+    Bucket: process.env.BUCKET,
     Key: key,
     Expires: 60,
   };
