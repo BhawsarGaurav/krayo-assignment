@@ -16,7 +16,7 @@ function Login() {
           withCredentials: true,
         })
         .then((response) => {
-          //   console.log(response);
+          //   console.log(response);rs
           if (response.data.user !== undefined) {
             console.log(response.data.user);
             localStorage.setItem("user", JSON.stringify(response.data.user));

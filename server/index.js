@@ -1,4 +1,5 @@
 require("dotenv").config();
+const axios = require("axios");
 const express = require("express");
 const cors = require("cors");
 const passport = require("passport");
@@ -6,6 +7,10 @@ const authRoute = require("./Routes/auth");
 const cookieSession = require("cookie-session");
 const passportStrategy = require("./passport");
 const app = express();
+
+const multer = require("multer");
+const upload = multer();
+const s3 = require("./configs/awsConfing");
 
 app.use(
   cookieSession({
@@ -24,8 +29,38 @@ app.use(
     credentials: true,
   })
 );
-
 app.use("/auth", authRoute);
+app.post("/fileUpload", upload.single("file"), (req, res) => {
+  const { originalname, buffer } = req.file;
+  const key = `${req.body.name}-${originalname}`;
+  let params = {
+    Bucket: "krayo-test",
+    Body: buffer,
+    Key: key,
+  };
+  s3.upload(params, (err, resp) => {
+    err ? console.log(err) : res.json({ reesponse: resp });
+  });
+});
+app.get("/getFiles", async (req, res) => {
+  const params = {
+    Bucket: "krayo-test",
+  };
+  const bucketObjects = await s3.listObjects(params).promise();
+  console.log(bucketObjects);
+  res.json({ data: bucketObjects });
+});
+app.post("/getPresignedUrl", async (req, res) => {
+  const { key } = req.query;
+  const params = {
+    Bucket: "krayo-test",
+    Key: key,
+    Expires: 60,
+  };
+  const presignedUrl = await s3.getSignedUrl("getObject", params);
+  console.log(presignedUrl);
+  res.json({ data: presignedUrl });
+});
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Listenting on port ${port}...`));

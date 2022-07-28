@@ -1,58 +1,51 @@
 import React, { useState, useEffect } from "react";
 import { Form, Button, Table } from "react-bootstrap";
-import { myBucket } from "../AwsConfig";
+
+import axios from "axios";
 import { useNavigate } from "react-router";
 function Dashboard() {
   const [file, setFile] = useState("");
-  const [user, setUser] = useState({});
   const [count, setCount] = useState(0);
+  const [user, setUser] = useState({});
+
   const navigate = useNavigate();
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const BUCKETNAME = "test-krayo";
-  const REGION = "ap-south-1";
+
   useEffect(() => {
     let data = JSON.parse(localStorage.getItem("user"));
-
+    // console.log(data);
     if (data == null) {
       navigate("/");
     }
-    console.log(data.emails[0].value);
     setUser(data);
-    const params = {
-      Bucket: BUCKETNAME,
-    };
-    myBucket.listObjects(params, (err, res) => {
-      if (err) console.log(err);
-      else {
-        // console.log(res.Contents);
-        setUploadedFiles(res.Contents);
-      }
-    });
+    getFiles();
   }, [count]);
+
   const handler = (e) => {
     setFile(e.target.files[0]);
-    // console.log(e.target.files[0]);
   };
 
-  const uploadFile = () => {
-    let fileName = `${user.emails[0].value}-${file.name}`;
-    // console.log(fileName);
-    const params = {
-      ACL: "public-read",
-      Body: file,
-      Bucket: BUCKETNAME,
-      Key: fileName,
-    };
-    myBucket
-      .putObject(params)
-      .on("httpDone", (evt) => {
-        alert("File Uploaded Successfully!!!!!");
-        console.log(evt);
+  const uploadFile = async () => {
+    let formdata = new FormData();
+    formdata.append("file", file);
+    formdata.append("name", `${user.emails[0].value}`);
+    await axios
+      .post("http://localhost:4000/fileUpload", formdata)
+      .then((res) => {
+        console.log(res);
         setCount(count + 1);
-        document.getElementById("input").value = "";
-      })
-      .send((err) => {
-        if (err) console.log(err);
+      });
+  };
+  const getFiles = async () => {
+    await axios.get("http://localhost:4000/getFiles").then((res) => {
+      setUploadedFiles(res.data.data.Contents);
+    });
+  };
+  const downloadFile = async (key) => {
+    await axios
+      .post(`http://localhost:4000/getPresignedUrl?key=${key}`)
+      .then((res) => {
+        window.open(res.data.data, "_blank");
       });
   };
   const logout = () => {
@@ -80,9 +73,7 @@ function Dashboard() {
                   <td>{i + 1}</td>
                   <td>{ele?.Key?.split("-")[1]}</td>
                   <td>
-                    <Button
-                      href={`https://${BUCKETNAME}.s3.${REGION}.amazonaws.com/${ele.Key}`}
-                    >
+                    <Button onClick={() => downloadFile(ele.Key)}>
                       {" "}
                       Download{" "}
                     </Button>
@@ -104,6 +95,7 @@ function Dashboard() {
           Upload File
         </Button>
       </Form>
+      {/* <Button onClick={() => getFiles()}>Get files</Button> */}
     </div>
   );
 }
